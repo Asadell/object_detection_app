@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:tflite_vision_app/model/detected_object.dart';
 import 'package:tflite_vision_app/service/object_detection_service.dart';
 
 class ObjectDetectionProvider extends ChangeNotifier {
@@ -9,17 +10,13 @@ class ObjectDetectionProvider extends ChangeNotifier {
     _service.initHelper();
   }
 
-  Map<String, num> _detections = {};
+  List<DetectedObject> _detectectedObjects = [];
 
-  Map<String, num> get detections => Map.fromEntries(
-        (_detections.entries.toList()
-              ..sort((a, b) => a.value.compareTo(b.value)))
-            .reversed
-            .take(3),
-      );
+  List<DetectedObject> get detectedObjects =>
+      _detectectedObjects.where((e) => e.score >= 0.5).toList();
 
   Future<void> runDetection(CameraImage camera) async {
-    _detections = await _service.inferenceCameraFrame(camera);
+    _detectectedObjects = await _service.inferenceCameraFrame(camera);
     notifyListeners();
   }
 

@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:tflite_vision_app/model/detected_object.dart';
 
 import 'isolate_inference.dart';
 
@@ -34,7 +35,7 @@ class ObjectDetectionService {
     labels = labelTxt.split('\n');
   }
 
-  Future<Map<String, double>> inferenceCameraFrame(
+  Future<List<DetectedObject>> inferenceCameraFrame(
       CameraImage cameraObject) async {
     var isolateModel = InferenceModel(cameraObject, interpreter.address, labels,
         inputTensor.shape, outputTensor.shape);

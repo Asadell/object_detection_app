@@ -2,8 +2,10 @@
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:flutter/widgets.dart';
 import 'package:camera/camera.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:tflite_vision_app/model/detected_object.dart';
 import 'package:tflite_vision_app/utils/image_utils.dart';
 import 'package:image/image.dart' as image_lib;
 
@@ -30,20 +32,59 @@ class IsolateInference {
       final imageMatrix = _imagePreProcessing(cameraImage, inputShape);
 
       final input = [imageMatrix];
-      final output = [List<int>.filled(isolateModel.outputShape[1], 0)];
+      final output = {
+        0: [List<List<num>>.filled(10, List<num>.filled(4, 0))],
+        1: [List<num>.filled(10, 0)],
+        2: [List<num>.filled(10, 0)],
+        3: [0.0],
+      };
       final address = isolateModel.interpreterAddress;
 
       final result = _runInference(input, output, address);
 
-      int maxScore = result.reduce((a, b) => a + b);
-      final keys = isolateModel.labels;
-      final values =
-          result.map((e) => e.toDouble() / maxScore.toDouble()).toList();
-      var detection = Map.fromIterables(keys, values);
-      detection.removeWhere((key, value) => value == 0);
+      final labels = isolateModel.labels;
+      final detectedObjects = _defineDetectedObject(result, labels);
 
-      isolateModel.responsePort.send(detection);
+      isolateModel.responsePort.send(detectedObjects);
     }
+  }
+
+  static List<DetectedObject> _defineDetectedObject(
+      List<List<Object>> result, List<String> labels) {
+    // Location
+    final locationsRaw = result.first.first as List<List<double>>;
+    final locations = locationsRaw
+        .map((list) => list.map((value) => (value * 300)).toList())
+        .map((rect) => Rect.fromLTRB(rect[1], rect[0], rect[3], rect[2]))
+        .toList();
+    // Classes
+    final classesRaw = result.elementAt(1).first as List<double>;
+    final classes = classesRaw.map((value) => value.toInt()).toList();
+    // Scores
+    final scores = result.elementAt(2).first as List<double>;
+    // Number of detections
+    final numberOfDetectionsRaw = result.last.first as double;
+    final numberOfDetections = numberOfDetectionsRaw.toInt();
+    final List<String> classification = [];
+    for (var i = 0; i < numberOfDetections; i++) {
+      classification.add(labels[classes[i]]);
+    }
+
+    /// Generate recognitions
+    List<DetectedObject> recognitions = [];
+    for (int i = 0; i < numberOfDetections; i++) {
+      // Prediction score
+      var score = scores[i];
+      // Label string
+      var label = classification[i];
+      recognitions.add(DetectedObject(
+        id: i,
+        label: label,
+        score: score,
+        rect: locations[i],
+      ));
+    }
+    return recognitions;
   }
 
   static List<List<List<num>>> _imagePreProcessing(
@@ -74,15 +115,15 @@ class IsolateInference {
     return imageMatrix;
   }
 
-  static List<int> _runInference(
+  static List<List<Object>> _runInference(
     List<List<List<List<num>>>> input,
-    List<List<int>> output,
+    Map<int, List<Object>> output,
     int interpreterAddress,
   ) {
     Interpreter interpreter = Interpreter.fromAddress(interpreterAddress);
-    interpreter.run(input, output);
-    // Get first output tensor
-    final result = output.first;
+    interpreter.runForMultipleInputs([input], output);
+    // Get output tensor
+    final result = output.values.toList();
     return result;
   }
 

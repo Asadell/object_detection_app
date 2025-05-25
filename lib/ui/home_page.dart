@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tflite_vision_app/controller/object_detection_provider.dart';
 import 'package:tflite_vision_app/service/object_detection_service.dart';
+import 'package:tflite_vision_app/utils/object_detector_painter.dart';
 import 'package:tflite_vision_app/widget/camera_view.dart';
 import 'package:tflite_vision_app/widget/detection_item.dart';
 
@@ -57,39 +58,21 @@ class _HomeBodyState extends State<_HomeBody> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        CameraView(
-          onImage: (cameraObject) async {
-            await readViewmodel.runDetection(cameraObject);
-          },
-        ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          left: 0,
-          child: Consumer<ObjectDetectionProvider>(
-            builder: (_, updateViewmodel, __) {
-              final detections = updateViewmodel.detections.entries;
-              if (detections.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return SingleChildScrollView(
-                child: Column(
-                  children: detections
-                      .map(
-                        (detection) => ClassificatioinItem(
-                          item: detection.key,
-                          value: detection.value.toStringAsFixed(2),
-                        ),
-                      )
-                      .toList(),
-                ),
-              );
-            },
+    return Consumer<ObjectDetectionProvider>(
+      builder: (context, value, child) {
+        final detectedObjects = value.detectedObjects;
+        return CustomPaint(
+          foregroundPainter: ObjectDetectorPainter(
+            detectedObjects,
           ),
-        ),
-      ],
+          child: child,
+        );
+      },
+      child: CameraView(
+        onImage: (cameraImage) async {
+          await readViewmodel.runDetection(cameraImage);
+        },
+      ),
     );
   }
 }

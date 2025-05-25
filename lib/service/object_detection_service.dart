@@ -7,10 +7,10 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 
 import 'isolate_inference.dart';
 
-class ImageClassificationService {
+class ObjectDetectionService {
   late final IsolateInference isolateInference;
-  final modelPath = 'assets/mobilenet.tflite';
-  final labelsPath = 'assets/labels.txt';
+  final modelPath = 'assets/ssd_mobilenet.tflite';
+  final labelsPath = 'assets/labelmap.txt';
 
   late final Interpreter interpreter;
   late final List<String> labels;
@@ -35,8 +35,8 @@ class ImageClassificationService {
   }
 
   Future<Map<String, double>> inferenceCameraFrame(
-      CameraImage cameraImage) async {
-    var isolateModel = InferenceModel(cameraImage, interpreter.address, labels,
+      CameraImage cameraObject) async {
+    var isolateModel = InferenceModel(cameraObject, interpreter.address, labels,
         inputTensor.shape, outputTensor.shape);
 
     ReceivePort responsePort = ReceivePort();

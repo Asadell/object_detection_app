@@ -39,10 +39,10 @@ class IsolateInference {
       final keys = isolateModel.labels;
       final values =
           result.map((e) => e.toDouble() / maxScore.toDouble()).toList();
-      var classification = Map.fromIterables(keys, values);
-      classification.removeWhere((key, value) => value == 0);
+      var detection = Map.fromIterables(keys, values);
+      detection.removeWhere((key, value) => value == 0);
 
-      isolateModel.responsePort.send(classification);
+      isolateModel.responsePort.send(detection);
     }
   }
 

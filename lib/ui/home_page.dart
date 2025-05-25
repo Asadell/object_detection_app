@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tflite_vision_app/controller/image_classification_provider.dart';
-import 'package:tflite_vision_app/service/image_classification_service.dart';
+import 'package:tflite_vision_app/controller/object_detection_provider.dart';
+import 'package:tflite_vision_app/service/object_detection_service.dart';
 import 'package:tflite_vision_app/widget/camera_view.dart';
-import 'package:tflite_vision_app/widget/classification_item.dart';
+import 'package:tflite_vision_app/widget/detection_item.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({
@@ -15,7 +15,7 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Image Classification App'),
+        title: const Text('Object Detection App'),
       ),
       body: ColoredBox(
         color: Colors.black,
@@ -23,11 +23,11 @@ class HomePage extends StatelessWidget {
           child: MultiProvider(
             providers: [
               Provider(
-                create: (context) => ImageClassificationService(),
+                create: (context) => ObjectDetectionService(),
               ),
               ChangeNotifierProvider(
-                create: (context) => ImageClassificationProvider(
-                  context.read<ImageClassificationService>(),
+                create: (context) => ObjectDetectionProvider(
+                  context.read<ObjectDetectionService>(),
                 ),
               ),
             ],
@@ -47,7 +47,7 @@ class _HomeBody extends StatefulWidget {
 }
 
 class _HomeBodyState extends State<_HomeBody> {
-  late final readViewmodel = context.read<ImageClassificationProvider>();
+  late final readViewmodel = context.read<ObjectDetectionProvider>();
 
   @override
   void dispose() {
@@ -60,27 +60,27 @@ class _HomeBodyState extends State<_HomeBody> {
     return Stack(
       children: [
         CameraView(
-          onImage: (cameraImage) async {
-            await readViewmodel.runClassification(cameraImage);
+          onImage: (cameraObject) async {
+            await readViewmodel.runDetection(cameraObject);
           },
         ),
         Positioned(
           bottom: 0,
           right: 0,
           left: 0,
-          child: Consumer<ImageClassificationProvider>(
+          child: Consumer<ObjectDetectionProvider>(
             builder: (_, updateViewmodel, __) {
-              final classifications = updateViewmodel.classifications.entries;
-              if (classifications.isEmpty) {
+              final detections = updateViewmodel.detections.entries;
+              if (detections.isEmpty) {
                 return const SizedBox.shrink();
               }
               return SingleChildScrollView(
                 child: Column(
-                  children: classifications
+                  children: detections
                       .map(
-                        (classification) => ClassificatioinItem(
-                          item: classification.key,
-                          value: classification.value.toStringAsFixed(2),
+                        (detection) => ClassificatioinItem(
+                          item: detection.key,
+                          value: detection.value.toStringAsFixed(2),
                         ),
                       )
                       .toList(),
